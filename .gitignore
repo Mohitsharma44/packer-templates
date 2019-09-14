@@ -1,0 +1,14 @@
+# Ignore Vagrant stuff
+.vagrant/
+
+# Ignore packer stuff
+packer_cache
+
+# Ignore ansible's retry files
+*.retry
+
+# Ignore log files
+*.log
+
+# Ignore emacs's temporary files
+*.*~
