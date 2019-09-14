@@ -54,3 +54,9 @@
             msg: 'Error hardening the Machine caused by {{ ansible_failed_task.name }}'
         - name: Running all handlers
           meta: flush_handlers
+
+  handlers:
+    - name: restart docker
+      service:
+        name: docker
+        state: restarted
