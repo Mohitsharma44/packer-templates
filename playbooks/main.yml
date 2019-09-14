@@ -28,6 +28,9 @@
 	state: present
       with_items:
         - git
+
+    - name: Installing Docker and docker-compose
+      include_tasks: install-docker.yml
 	
     - name: Hardening the Machine
       block:
