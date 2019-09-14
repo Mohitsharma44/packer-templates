@@ -1,0 +1,61 @@
+---
+
+
+- debug:
+    msg: " This is from usermanager {{ add_groups }}"
+    
+- name: Create user groups
+  group:
+    name: "{{ item.group }}"
+    gid: "{{ item.gid | default(omit)}}"
+  with_items:
+    - "{{ add_groups }}"
+  become: yes
+  when: add_groups is defined
+
+- name: Allow passwordless access to admin groups
+  lineinfile:
+    dest: "/etc/sudoers.conf.d/{{ item.group }}"
+    line: "%{{ item.group }} ALL=(ALL) NOPASSWD: ALL"
+    state: present
+    create: true
+  when: add_groups is defined and item.type == 'admin'
+  with_items:
+    - "{{ add_groups }}"
+  become: yes
+
+- name: Create Users
+  user:
+    name: "{{ item.username }}"
+    group: "{{ item.group | default('users') }}"
+    groups: "{{ item.groups | join(',') if 'groups' in item else '' }}"
+    shell: "{{ item.shell if item.shell is defined else users_default_shell }}"
+    password: "{{ item.password if item.password is defined else '!' }}"
+    comment: "{{ item.name if item.name is defined else '' }}"
+    uid: "{{ item.uid | default(omit) }}"
+    home: "{{ item.home | default('/home/' + item.username) }}"
+    createhome: "{{ 'yes' if users_create_homedirs else 'no' }}"
+    generate_ssh_key: "{{ item.generate_ssh_key | default('yes') }}"
+    skeleton: true
+  with_items:
+    - "{{ add_users }}"
+  become: yes
+  when: add_users is defined
+
+- name: Set Authorized keys for users
+  authorized_key:
+    user: "{{ item.username }}"
+    state: present
+    key: "{{ item.key | default(omit) }}"
+  with_items:
+    - "{{ add_users }}"
+
+- name: Delete Users
+  user:
+    name: "{{ item.username }}"
+    state: absent
+    remove: "{{ item.remove | default(omit) }}"
+    force: "{{ item.force | default(omit) }}"
+  with_items: "{{ delete_users }}"
+  become: yes
+  when: delete_users is defined

@@ -1,0 +1,25 @@
+---
+
+users_default_shell: /bin/bash
+users_create_homedirs: true
+
+add_users:
+  - name: Mohit Sharma
+    username: mohitsharma44
+    group: admin
+    groups: ['root', 'sudo']
+    uid: 1010
+    shell: "{{ users_default_shell }}"
+    generate_ssh_key: yes
+    key: https://github.com/mohitsharma44.keys
+
+add_groups:
+  - name: admin group
+    group: admin
+    type: admin
+    gid: 10000
+
+  - name: non-admin user group
+    group: users
+    type: user
+    gid: 10101

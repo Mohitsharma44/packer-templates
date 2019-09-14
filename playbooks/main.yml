@@ -1,0 +1,42 @@
+---
+- hosts: all
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - defaults/main.yml
+
+  pre_tasks:
+    - name: Downloading required roles
+      local_action: command ansible-galaxy install -r requirements.yml
+      become: false
+
+  tasks:
+    - name: Setting up users
+      include_tasks: usermanager.yml
+    - name: Install emacs text editor
+      include_role:
+        name: mohitsharma44.emacs
+      vars:
+        BUILD_FROM_SRC: false
+    - name: Hardening the Machine
+      block:
+        - name: Hardening the OS
+          include_role:
+            name: dev-sec.os-hardening
+          vars:
+            os_auth_lockout_time: 30
+            os_auth_pam_passwdqc_enable: false
+            os_auditd_enabled: false
+            ufw_default_input_policy: ACCEPT
+        - name: Hardening SSH
+          include_role:
+            name: dev-sec.ssh-hardening
+          vars:
+            ssh_max_auth_retries: 3
+            ssh_use_pam: true
+            ssh_allow_agent_forwarding: true
+      rescue:
+        - debug:
+            msg: 'Error hardening the Machine caused by {{ ansible_failed_task.name }}'
+        - name: Running all handlers
+          meta: flush_handlers
