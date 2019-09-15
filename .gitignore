@@ -12,3 +12,6 @@ packer_cache
 
 # Ignore emacs's temporary files
 *.*~
+
+# secret vars directory
+.secrets/
