@@ -1,0 +1,113 @@
+{
+    "description": "Build deploy 16.04 (xenial) x86_64 Proxmox template",
+    "variables": {
+        "proxmox_url": "{{user `proxmox_url`}}",
+        "proxmox_username": "root@pam",
+        "proxmox_password": "{{user `proxmox_password`}}",
+        "vm_id": "999",
+        "vm_name": "ubuntu1604-tmpl",
+        "template_description": "Ubuntu 16.04 x86_64 template built with packer. Username: {{env `vm_default_user`}}",
+        "ssh_user": "builder",
+        "ssh_pwd": "builder"
+    },
+    "sensitive-variables": ["proxmox_password"],
+    "provisioners": [
+        {
+            "type": "shell",
+            "execute_command": "echo '{{user `ssh_pwd`}}' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+            "script": "scripts/00-adduser.sh",
+            "environment_vars": [
+                "SSH_USER={{user `ssh_user`}}"
+            ]
+        },
+
+        {
+            "type": "shell",
+            "execute_command": "echo '{{user `ssh_pwd`}}' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+            "script": "scripts/01-addansible.sh"
+        },
+        {
+            "type": "ansible-local",
+	    "playbook_dir": "playbooks",
+            "playbook_file": "playbooks/main.yml",
+            "host_vars": "playbooks/defaults/",
+            "galaxy_file": "playbooks/requirements.yml"
+        },
+        {
+            "type": "shell",
+            "execute_command": "echo '{{user `ssh_pwd`}}' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+            "script": "scripts/99-cleanup.sh"
+        }
+    ],
+    "builders": [
+        {
+            "type": "proxmox",
+            "proxmox_url":  "{{user `proxmox_url`}}",
+            "insecure_skip_tls_verify": true,
+            "username": "{{user `proxmox_username`}}",
+            "password": "{{user `proxmox_password`}}",
+            "vm_id":  "{{user `vm_id`}}",
+            "vm_name": "{{user `vm_name`}}",
+            "template_description":"{{user `template_description`}}",
+            "memory": 12288,
+            "cores": 12,
+            "os": "l26",
+            "http_directory": "http",
+            "node": "proxmox",
+            "network_adapters": [
+              {
+                "model": "virtio",
+                "bridge": "vmbr1"
+              }
+            ],
+            "disks": [
+              {
+                "type": "scsi",
+                "disk_size": "8G",
+                "storage_pool": "local",
+                "storage_pool_type": "directory",
+                "format": "qcow2"
+              }
+            ],
+            "ssh_username": "{{user `ssh_user`}}",
+            "ssh_password": "{{user `ssh_pwd`}}",
+            "ssh_timeout": "10000s",
+            "iso_file": "local:iso/ubuntu-16.04.6-server-amd64.iso",
+            "unmount_iso": true,
+            "boot_wait": "10s",
+            "boot_command": [
+                "<enter><wait><f6><esc><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "/install/vmlinuz<wait>",
+                " auto<wait>",
+                " console-setup/ask_detect=false<wait>",
+                " console-setup/layoutcode=us<wait>",
+                " console-setup/modelcode=pc105<wait>",
+                " debconf/frontend=noninteractive<wait>",
+                " debian-installer=en_US<wait>",
+                " fb=false<wait>",
+                " initrd=/install/initrd.gz<wait>",
+                " kbd-chooser/method=us<wait>",
+                " keyboard-configuration/layout=USA<wait>",
+                " keyboard-configuration/variant=USA<wait>",
+                " locale=en_US<wait>",
+                " netcfg/get_domain=vm<wait>",
+                " netcfg/get_hostname=builder<wait>",
+                " grub-installer/bootdev=/dev/sda<wait>",
+                " noapic<wait>",
+                " preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ubuntu1604_preseed.cfg",
+                " -- <wait>",
+                "<enter><wait>"
+            ]
+        }
+    ],
+    "post-processors": [
+      {
+        "type": "shell-local",
+        "inline_shebang": "/bin/bash -e",
+        "inline": ["qm set {{user `vm_id`}} --scsihw virtio-scsi-pci --serial0 socket --vga serial0"]
+      }
+  ]
+}
