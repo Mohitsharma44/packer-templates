@@ -16,18 +16,18 @@
     - name: Setting up users
       include_tasks: usermanager.yml
 
-    - name: Install emacs text editor
-      include_role:
-        name: mohitsharma44.emacs
-      vars:
-        BUILD_FROM_SRC: false
-
     - name: Installing packages
       package:
         name: "{{ item }}"
         state: present
       with_items:
         - git
+
+    - name: Install emacs text editor
+      include_role:
+        name: mohitsharma44.emacs
+      vars:
+        BUILD_FROM_SRC: false
 
     - name: Installing Docker and docker-compose
       include_tasks: install-docker.yml
