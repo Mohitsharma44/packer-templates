@@ -65,6 +65,7 @@
             "disk_size": 81920,
             "guest_os_type": "Ubuntu_64",
             "headless": true,
+            "post_shutdown_delay": "5m",
             "http_directory": "http",
             "iso_urls": [
                 "iso/ubuntu-16.04.6-server-amd64.iso",
@@ -85,13 +86,13 @@
                     "modifyvm",
                     "{{.Name}}",
                     "--memory",
-                    "12288"
+                    "6144"
                 ],
                 [
                     "modifyvm",
                     "{{.Name}}",
                     "--cpus",
-                    "12"
+                    "6"
                 ]
             ]
         }
