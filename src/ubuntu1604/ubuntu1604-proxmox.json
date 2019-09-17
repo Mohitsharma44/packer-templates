@@ -28,7 +28,7 @@
         },
         {
             "type": "ansible-local",
-	    "playbook_dir": "playbooks",
+            "playbook_dir": "playbooks",
             "playbook_file": "playbooks/main.yml",
             "host_vars": "playbooks/defaults/",
             "galaxy_file": "playbooks/requirements.yml"
@@ -49,29 +49,30 @@
             "vm_id":  "{{user `vm_id`}}",
             "vm_name": "{{user `vm_name`}}",
             "template_description":"{{user `template_description`}}",
-            "memory": 12288,
-            "cores": 12,
+            "memory": 6144,
+            "cores": 6,
             "os": "l26",
             "http_directory": "http",
-            "node": "proxmox",
+            "node": "home-server",
             "network_adapters": [
-              {
-                "model": "virtio",
-                "bridge": "vmbr1"
-              }
+                {
+                    "model": "virtio",
+                    "bridge": "vmbr0"
+                }
             ],
             "disks": [
-              {
-                "type": "scsi",
-                "disk_size": "8G",
-                "storage_pool": "local",
-                "storage_pool_type": "directory",
-                "format": "qcow2"
-              }
+                {
+                    "type": "scsi",
+                    "disk_size": "8G",
+                    "storage_pool": "local-lvm",
+                    "storage_pool_type": "lvm-thin",
+                    "format": "raw"
+
+                }
             ],
             "ssh_username": "{{user `ssh_user`}}",
             "ssh_password": "{{user `ssh_pwd`}}",
-            "ssh_timeout": "10000s",
+            "ssh_timeout": "15m",
             "iso_file": "local:iso/ubuntu-16.04.6-server-amd64.iso",
             "unmount_iso": true,
             "boot_wait": "10s",
@@ -100,14 +101,8 @@
                 " preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ubuntu1604_preseed.cfg",
                 " -- <wait>",
                 "<enter><wait>"
-            ]
+            ],
+            "qemu_agent": true
         }
-    ],
-    "post-processors": [
-      {
-        "type": "shell-local",
-        "inline_shebang": "/bin/bash -e",
-        "inline": ["qm set {{user `vm_id`}} --scsihw virtio-scsi-pci --serial0 socket --vga serial0"]
-      }
-  ]
+    ]
 }
