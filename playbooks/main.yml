@@ -2,6 +2,8 @@
 - hosts: all
   become: yes
   gather_facts: yes
+  vars:
+    - ansible_user: osboxes
   vars_files:
     - defaults/main.yml
 
@@ -12,9 +14,26 @@
       become: false
 
   tasks:
+    - name: Setup NTP
+      include_role:
+        name: geerlingguy.ntp
 
-    - name: Setting up users
-      include_tasks: usermanager.yml
+    - name: Set authorized keys
+      block:
+        - name: Adding /etc/ssh/authorized_keys as an additional file in AuthorizedKeysFile
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            line: "AuthorizedKeysFile .ssh/authorized_keys /etc/ssh/authorized_keys"
+            create: yes
+
+        - name: Add ssh key for Administrator
+          authorized_key:
+            user: root
+            state: present
+            key: https://github.com/mohitsharma44.keys
+            path: /etc/ssh/authorized_keys
+            validate_certs: True
+            manage_dir: False
 
     - name: Installing packages
       package:
@@ -31,29 +50,6 @@
 
     - name: Installing Docker and docker-compose
       include_tasks: install-docker.yml
-
-    - name: Hardening the Machine
-      block:
-        - name: Hardening the OS
-          include_role:
-            name: dev-sec.os-hardening
-          vars:
-            os_auth_lockout_time: 30
-            os_auth_pam_passwdqc_enable: false
-            os_auditd_enabled: false
-            ufw_default_input_policy: ACCEPT
-        - name: Hardening SSH
-          include_role:
-            name: dev-sec.ssh-hardening
-          vars:
-            ssh_max_auth_retries: 3
-            ssh_use_pam: true
-            ssh_allow_agent_forwarding: true
-      rescue:
-        - debug:
-            msg: 'Error hardening the Machine caused by {{ ansible_failed_task.name }}'
-        - name: Running all handlers
-          meta: flush_handlers
 
   handlers:
     - name: restart docker

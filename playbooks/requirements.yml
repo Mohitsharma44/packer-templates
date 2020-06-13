@@ -1,4 +1,5 @@
 ---
+- src: geerlingguy.ntp
 - src: mohitsharma44.emacs
 - src: dev-sec.os-hardening
 - src: dev-sec.ssh-hardening
