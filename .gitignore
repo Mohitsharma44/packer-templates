@@ -15,3 +15,5 @@ packer_cache
 
 # secret vars directory
 .secrets/
+
+*variables.json
