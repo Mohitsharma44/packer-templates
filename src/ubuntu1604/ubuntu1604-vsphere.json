@@ -1,0 +1,95 @@
+{
+    "builders": [
+        {
+            "type": "vsphere-iso",
+            "vcenter_server":      "{{ user `vcenter_host` }}",
+            "username":            "{{ user `vcenter_username` }}",
+            "password":            "{{ user `vcenter_password` }}",
+            "insecure_connection": "true",
+
+            "vm_name": "ubuntu-1604-template",
+            "host":     "esxi01.sharmamohit.com",
+            "datastore": "Silo",
+
+            "guest_os_type": "ubuntu64Guest",
+
+            "ssh_username": "{{ user `ssh_username` }}",
+            "ssh_password": "{{ user `ssh_password` }}",
+
+            "CPUs":             2,
+            "RAM":              2048,
+            "RAM_reserve_all":  true,
+
+            "disk_controller_type":  "pvscsi",
+            "disk_size":        8192,
+            "disk_thin_provisioned": true,
+
+            "network_adapters": [
+                {
+                    "network": "VM Network",
+                    "network_card": "vmxnet3"
+                }
+            ],
+
+            "iso_paths": [
+                "[Silo] ISOs/ubuntu-16.04.6-server-amd64.iso"
+            ],
+            "floppy_files": [
+                "{{ template_dir }}/preseed.cfg"
+            ],
+            "boot_command": [
+                "<enter><wait><f6><wait><esc><wait>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+                "<bs><bs><bs>",
+                "/install/vmlinuz",
+                " initrd=/install/initrd.gz",
+                " priority=critical",
+                " locale=en_US",
+                " hostname=ubuntu1604",
+                " file=/media/preseed.cfg",
+                " -- <wait>",
+                "<enter>"
+            ]
+        }
+    ],
+
+    "provisioners": [
+        {
+            "type": "shell",
+            "execute_command": "echo '{{user `ssh_password`}}' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+            "script": "scripts/00-adduser.sh",
+            "environment_vars": [
+                "SSH_USER={{user `ssh_username`}}"
+            ]
+        },
+        {
+            "type": "shell",
+            "execute_command": "echo '{{user `ssh_password`}}' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+            "script": "scripts/01-addansible.sh"
+        },
+        {
+            "type": "shell",
+            "execute_command": "echo '{{user `ssh_password`}}' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+            "script": "scripts/02-addcrontab.sh"
+        },
+        {
+            "type": "ansible-local",
+            "playbook_dir": "playbooks",
+            "playbook_file": "playbooks/main.yml",
+            "host_vars": "playbooks/defaults/",
+            "galaxy_file": "playbooks/requirements.yml"
+        },
+        {
+            "type": "shell",
+            "execute_command": "echo '{{user `ssh_password`}}' | {{.Vars}} sudo -S -E bash '{{.Path}}'",
+            "script": "scripts/99-cleanup.sh"
+        }
+    ]
+}
